@@ -62,6 +62,8 @@ button{font:inherit} ul,ol{margin:0;padding:0} li{list-style:none} hr{border:0;b
 .head__mark{font-size:11px;letter-spacing:.26em;text-transform:uppercase;color:var(--ink-3);margin:0}
 .nav{margin-left:auto}
 .nav ul{display:flex;gap:30px;align-items:center}
+#admin[hidden]{display:none!important}
+#foot-brand{-webkit-user-select:none;user-select:none;-webkit-tap-highlight-color:transparent;touch-action:manipulation}
 .nav__admin{margin-left:4px;padding-left:22px;border-left:1px solid var(--rule)}
 .nav__admin button{color:var(--maroon);font-weight:800}
 .nav a,.nav button{font-size:15.5px;font-weight:600;letter-spacing:.05em;text-transform:uppercase;color:var(--ink-2);text-decoration:none;padding:8px 0;border-bottom:2px solid transparent;background:none;border-top:0;border-left:0;border-right:0;cursor:pointer}
@@ -399,7 +401,6 @@ select.control{font:inherit;font-size:15px;padding:11px 14px;min-height:46px;bac
         <li><a href="#leaderboard" data-go="#leaderboard">Leaderboard</a></li>
         <li><a href="#challenges" data-go="#challenges">Challenges</a></li>
         <li><a href="#about" data-go="#about">About</a></li>
-        <li class="nav__admin"><button type="button" data-go="#admin">Admin Login</button></li>
       </ul>
     </nav>
   </div>
@@ -546,12 +547,13 @@ select.control{font:inherit;font-size:15px;padding:11px 14px;min-height:46px;bac
   </div>
 </section>
 
-<section class="sec sec--deep" id="admin">
+<section class="sec sec--deep" id="admin" hidden>
   <div class="shell">
     <div class="sec__head" data-reveal>
       <p class="sec__k">Staff area</p>
       <h2 class="sec__h">Admin dashboard</h2>
       <p class="sec__p">A live overview of participation, for Central Library staff. Sign in to view it.</p>
+      <p style="margin:16px 0 0"><button class="btn btn--ghost" id="admin-close" type="button">Close admin area</button></p>
     </div>
 
     <div class="admin-gate" id="admin-gate" data-reveal>
@@ -599,11 +601,10 @@ select.control{font:inherit;font-size:15px;padding:11px 14px;min-height:46px;bac
       </ul>
     </div>
     <div>
-      <h4>Library Engage</h4>
+      <h4 id="foot-brand">Library Engage</h4>
       <ul>
         <li><button type="button" class="linklike" data-go="#challenges">Challenges</button></li>
         <li><button type="button" class="linklike" data-go="#leaderboard">Leaderboard</button></li>
-        <li><button type="button" class="linklike" data-go="#admin">Admin Login</button></li>
       </ul>
     </div>
   </div>
@@ -2270,6 +2271,36 @@ function downloadCsv() {
    11. NAV, REVEAL
    ========================================================================== */
 function go(sel) { const t = $(sel); if (t) t.scrollIntoView({ behavior: reduceMotion ? 'auto' : 'smooth', block: 'start' }); }
+/* Hidden admin access: click the footer heading "Library Engage" five times
+   (each click within 2 seconds of the last) to reveal the admin area. */
+function initAdminAccess() {
+  const brand = $('#foot-brand'), closeBtn = $('#admin-close');
+  if (!brand || !$('#admin')) return;
+  let taps = 0, last = 0;
+  brand.addEventListener('click', () => {
+    const now = Date.now();
+    taps = (now - last > 2000) ? 1 : taps + 1;
+    last = now;
+    if (taps >= 5) { taps = 0; openAdminArea(); }
+  });
+  if (closeBtn) closeBtn.addEventListener('click', closeAdminArea);
+}
+function openAdminArea() {
+  $('#admin').hidden = false;
+  $$('#admin [data-reveal]').forEach(n => n.classList.add('is-in'));
+  setTimeout(() => {
+    go('#admin');
+    const pw = $('#admin-pw');
+    if (pw && !$('#admin-gate').hidden) pw.focus({ preventScroll: true });
+  }, 60);
+}
+function closeAdminArea() {
+  adminKey = null; adminRows = [];                       // sign out and forget the data
+  $('#admin-panel').hidden = true; $('#admin-gate').hidden = false; $('#admin-err').hidden = true;
+  $('#admin-pw').value = ''; $('#admin-table-host').textContent = '';
+  $('#admin').hidden = true;
+  window.scrollTo({ top: document.body.scrollHeight, behavior: reduceMotion ? 'auto' : 'smooth' });
+}
 function initNav() {
   const toggle = $('#nav-toggle'), nav = $('#nav');
   toggle.addEventListener('click', () => { const open = nav.classList.toggle('is-open'); toggle.setAttribute('aria-expanded', open ? 'true' : 'false'); });
@@ -2298,7 +2329,7 @@ function initLeaderboardControls() {
    START
    ========================================================================== */
 document.addEventListener('DOMContentLoaded', () => {
-  renderCards(); initNav(); initReveal(); initLeaderboardControls(); initFacts(); initJourney(); initAdmin();
+  renderCards(); initNav(); initReveal(); initLeaderboardControls(); initFacts(); initJourney(); initAdmin(); initAdminAccess();
   flushOutbox(); setInterval(flushOutbox, 30000); window.addEventListener('online', flushOutbox);
   fetchRemoteRows(renderLeaderboard);
   $('#hero-explore').addEventListener('click', () => go('#challenges'));
